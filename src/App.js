@@ -1,11 +1,14 @@
 
 import './App.css';
-import {Switch, Route} from 'react-router-dom';
+import {Switch, Route, Redirect} from 'react-router-dom';
+import {connect} from 'react-redux';
 import HomePage from './pages/homepage/homepage.component';
 import ShopPage from './pages/shop/shop.component.jsx';
+
 import SignInAndSignUpPage from './pages/sign-in-and-sign-up/sign-in-and-sign-up.component';
 import Header from './components/header/header.component.jsx';
 import {auth, createUserProfileDocument} from './firebase/firebase.utils';
+import { setCurrentUser } from './redux/user/user.actions';
 import React from 'react';
 
 
@@ -23,16 +26,15 @@ class App extends React.Component {
       if(userAuth){
         const userRef = await createUserProfileDocument(userAuth);
         userRef.onSnapshot(snapShot =>{
-         this.setState({
-           currentUser :{
+         setCurrentUser({
+          
              id: snapShot.id,
              ...snapShot.data()
-           }});
-           console.log(this.state);
+           });
         });
         
       }
-      this.setState({currentUser: userAuth});
+      this.setState(userAuth);
       // createUserProfileDocument(user);
       // this.setState({currentUser : user});
       // console.log("user details:",user);
@@ -44,15 +46,24 @@ class App extends React.Component {
   render(){
   return (
     <div>
-      <Header currentUser={this.state.currentUser} />
+      <Header/>
       <Switch>
      <Route exact path='/' component={HomePage} />
      <Route  path='/shop' component={ShopPage} />
-     <Route  path='/signin' component={SignInAndSignUpPage} />
+     <Route exact path='/signin'
+      render={()=> this.props.currentUser ? (<Redirect to='/' />) :(<SignInAndSignUpPage />) } />
      </Switch>
     </div>
   );
 }
 }
+const mapStateProps = ({user}) =>({
+  currentUser : user.currentUser
 
-export default App;
+})
+const mapDispatchToProps = dispatch =>({
+  setCurrentUser : user => dispatch(setCurrentUser(user))
+
+})
+
+export default connect(mapDispatchToProps)(App);
